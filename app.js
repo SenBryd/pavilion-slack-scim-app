@@ -1,61 +1,50 @@
 const axios = require('axios');
 
-const SCIM_BASE_URL = 'https://api.slack.com/scim/v2';
-
 module.exports = (app) => {
-  app.post('/register', async ({ req, res }) => {
-    const userInfo = req.body;
+  app.post('/Users', async ({ request, response }) => {
+    const userData = request.body;
     try {
-      const response = await axios.post(`${SCIM_BASE_URL}/Users`, userInfo, {
+      const provisionResponse = await axios.post('https://api.slack.com/scim/v2/Users', userData, {
         headers: {
-          Authorization: 'Bearer your-slack-token-here',
+          Authorization: `Bearer ${process.env.SLACK_USER_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
-      res.status(200).send(response.data);
+      response.status(200).send(provisionResponse.data);
     } catch (error) {
-      res.status(500).send(error);
+      console.error(error);
+      response.status(500).send(error);
     }
   });
 
-  app.post('/update', async ({ req, res }) => {
-    const { id, ...updateInfo } = req.body;
+  app.delete('/scim/v2/Users/:email', async ({ request, response }) => {
+    const userEmail = request.params.email;
     try {
-      const response = await axios.patch(`${SCIM_BASE_URL}/Users/${id}`, updateInfo, {
+      // Find the user by email
+      const usersResponse = await axios.get('https://api.slack.com/scim/v2/Users', {
         headers: {
-          Authorization: 'Bearer your-slack-token-here',
+          Authorization: `Bearer ${process.env.SLACK_USER_TOKEN}`,
           'Content-Type': 'application/json'
         }
       });
-      res.status(200).send(response.data);
-    } catch (error) {
-      res.status(500).send(error);
-    }
-  });
-
-  app.post('/deprovision', async ({ req, res }) => {
-    const { email } = req.body;
-    try {
-      const usersResponse = await axios.get(`${SCIM_BASE_URL}/Users`, {
-        headers: {
-          Authorization: 'Bearer your-slack-token-here',
-          'Content-Type': 'application/json'
-        }
-      });
-      const user = usersResponse.data.Resources.find(u => u.emails[0].value === email);
-      if (user) {
-        await axios.delete(`${SCIM_BASE_URL}/Users/${user.id}`, {
-          headers: {
-            Authorization: 'Bearer your-slack-token-here',
-            'Content-Type': 'application/json'
-          }
-        });
-        res.status(200).send({ message: 'User deprovisioned successfully.' });
-      } else {
-        res.status(404).send({ message: 'User not found.' });
+      
+      const user = usersResponse.data.Resources.find(u => u.emails.some(e => e.value === userEmail));
+      if (!user) {
+        return response.status(404).send('User not found');
       }
+
+      // De-provision the user
+      const userId = user.id;
+      await axios.delete(`https://api.slack.com/scim/v2/Users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.SLACK_USER_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      response.status(204).send();
     } catch (error) {
-      res.status(500).send(error);
+      console.error(error);
+      response.status(500).send(error);
     }
   });
 };
