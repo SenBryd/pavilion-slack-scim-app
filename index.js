@@ -1,12 +1,14 @@
 const { App } = require('@slack/bolt');
+const appLogic = require('./app');
+
 const app = new App({
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-  token: process.env.SLACK_BOT_TOKEN,
+  token: process.env.SLACK_USER_TOKEN,
+  signingSecret: process.env.SLACK_SIGNING_SECRET
 });
 
-require('./app')(app);
+appLogic(app);
 
 (async () => {
-  await app.start(process.env.PORT)
+  await app.start(process.env.PORT);
   console.log('⚡️ Bolt app is running!');
 })();
