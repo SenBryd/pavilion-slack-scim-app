@@ -6,10 +6,8 @@ const app = new App({
 app.post('/provision', async ({ request, response }) => {
   try {
     const userData = request.body;
-    const provisionResponse = await axios.post(
-      'https://api.slack.com/scim/v2/Users',
-      userData,
-      {
+    const provisionResponse = await axios.post('https://api.slack.com/scim/v2/Users',
+    userData, {
         headers: {
           Authorization: `Bearer ${process.env.SLACK_USER_TOKEN}`,
           'Content-Type': 'application/json',
