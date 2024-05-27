@@ -7,6 +7,6 @@ const app = new App({
 require('./app')(app);
 
 (async () => {
-  await app.start(process.env.PORT || 3000);
+  await app.start(process.env.PORT)
   console.log('⚡️ Bolt app is running!');
 })();
